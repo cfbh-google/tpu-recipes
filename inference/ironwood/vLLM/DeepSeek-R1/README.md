@@ -156,7 +156,7 @@ spec:
     command: ["/bin/bash", "-c"]
     args:
     - |
-      while ! curl -s http://vllm-deepseek-r1-service:8000/ping; do sleep 30 && echo 'Waiting for server...'; done
+      while ! curl -s -f http://vllm-deepseek-r1-service:8000/health; do sleep 30 && echo 'Waiting for server...'; done
       apt-get update && apt-get install -y git && \
       git clone https://github.com/SemiAnalysisAI/InferenceX.git /tmp/inferencex && \
       cd /tmp/inferencex && \
