@@ -1,0 +1,132 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vllm-deepseek
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: hyperdisk-balanced-deepseek
+provisioner: pd.csi.storage.gke.io
+parameters:
+  type: hyperdisk-balanced
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hd-claim-deepseek-v3
+  namespace: vllm-deepseek
+spec:
+  storageClassName: hyperdisk-balanced-deepseek
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1500Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-deepseek-v3
+  namespace: vllm-deepseek
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm-deepseek-v3
+  template:
+    metadata:
+      labels:
+        app: vllm-deepseek-v3
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-tpu-accelerator: tpu7x
+        cloud.google.com/gke-tpu-topology: 2x2x1
+      containers:
+      - name: vllm-tpu
+        image: vllm/vllm-tpu:nightly-20260626-c539adc-cc79815
+        command: ["vllm", "serve"]
+        args:
+        - --host=0.0.0.0
+        - --port=8000
+        - --model=deepseek-ai/DeepSeek-V3
+        - --tokenizer=deepseek-ai/DeepSeek-V3
+        - --load-format=runai_streamer
+        - --tensor-parallel-size=8
+        - --kv-cache-dtype=fp8
+        - --max-model-len=9216
+        - --gpu-memory-utilization=0.95
+        - --max-num-seqs=128
+        - --max-num-batched-tokens=1024
+        - --enable-expert-parallel
+        - --async-scheduling
+        - '--additional-config={"sharding": {"sharding_strategy": {"enable_dp_attention": true}}}'
+        - --download-dir=/data
+        env:
+        - name: MOE_ALL_GATHER_ACTIVATION_DTYPE
+          value: "fp8"
+        - name: MOE_REQUANTIZE_WEIGHT_DTYPE
+          value: "fp4"
+        - name: MOE_REQUANTIZE_BLOCK_SIZE
+          value: "512"
+        - name: NEW_MODEL_DESIGN
+          value: "1"
+        - name: MODEL_IMPL_TYPE
+          value: "vllm"
+        - name: TPU_BACKEND_TYPE
+          value: "jax"
+        - name: VLLM_DISABLE_SHARED_EXPERTS_STREAM
+          value: "1"
+        - name: VLLM_TORCH_COMPILE_CACHE_DIR
+          value: "/data/torch_compile_cache"
+        - name: XLA_CACHE_DIR
+          value: "/data/xla_cache"
+        - name: HF_HOME
+          value: /data
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-secret
+              key: hf_api_token
+        ports:
+        - containerPort: 8000
+        resources:
+          limits:
+            google.com/tpu: '4'
+          requests:
+            google.com/tpu: '4'
+        readinessProbe:
+          tcpSocket:
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        volumeMounts:
+        - mountPath: "/data"
+          name: data-volume
+        - mountPath: /dev/shm
+          name: dshm
+      volumes:
+      - emptyDir:
+          medium: Memory
+        name: dshm
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: hd-claim-deepseek-v3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-deepseek-v3-service
+  namespace: vllm-deepseek
+spec:
+  selector:
+    app: vllm-deepseek-v3
+  type: ClusterIP
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8000
+    targetPort: 8000
