@@ -1,8 +1,8 @@
-# Serve DeepSeek-R1 / DeepSeek-V3 with vLLM on Ironwood TPU
+# Serve DeepSeek-R1 with vLLM on Ironwood TPU
 
-In this guide, we show how to serve and benchmark [DeepSeek-R1](https://huggingface.co/deepseek-ai/DeepSeek-R1) and [DeepSeek-V3](https://huggingface.co/deepseek-ai/DeepSeek-V3) with vLLM on Ironwood (TPU v7x) using GKE.
+In this guide, we show how to serve and benchmark [DeepSeek-R1](https://huggingface.co/deepseek-ai/DeepSeek-R1) with vLLM on Ironwood (TPU v7x) using GKE.
 
-DeepSeek-R1 and DeepSeek-V3 are 671B parameter Mixture-of-Experts (MoE) models (37B active parameters per token) utilizing Multi-head Latent Attention (MLA). We deploy them on a single **tpu7x-standard-4t** node pool (4 TPU v7x chips, 8 TensorCores) using a **2x2x1** topology and **Tensor Parallelism (TP) size of 8**, using FP8 activation all-gather, FP4 weight requantization, and DP-attention sharding.
+DeepSeek-R1 is 671B parameter Mixture-of-Experts (MoE) models (37B active parameters per token) utilizing Multi-head Latent Attention (MLA). We deploy them on a single **tpu7x-standard-4t** node pool (4 TPU v7x chips, 8 TensorCores) using a **2x2x1** topology and **Tensor Parallelism (TP) size of 8**, using FP8 activation all-gather, FP4 weight requantization, and DP-attention sharding.
 
 ---
 
@@ -11,7 +11,6 @@ DeepSeek-R1 and DeepSeek-V3 are 671B parameter Mixture-of-Experts (MoE) models (
 | Model | Parameters | Active Parameters | Min TPUs (Chips) | Topology | Hugging Face |
 | :---- | :---- | :---- | :---- | :---- | :---- |
 | DeepSeek-R1 | 671B | 37B | 4× (tpu7x-standard-4t) | 2x2x1 | [deepseek-ai/DeepSeek-R1](https://huggingface.co/deepseek-ai/DeepSeek-R1) |
-| DeepSeek-V3 | 671B | 37B | 4× (tpu7x-standard-4t) | 2x2x1 | [deepseek-ai/DeepSeek-V3](https://huggingface.co/deepseek-ai/DeepSeek-V3) |
 
 ---
 
