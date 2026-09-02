@@ -31,9 +31,9 @@ export PROJECT_ID=""
 export CLUSTER_NAME=""
 export ZONE=""
 export BASE_OUTPUT_DIR=""
-export ARTIFACT_DIR=""
 export WORKLOAD_IMAGE=""
 export WORKLOAD_NAME="$(printf "%.26s" "${USER//_/-}-gpt-oss-120b")-$(date +%Y%m%d-%H%M)"
+export ARTIFACT_DIR="${BASE_OUTPUT_DIR}/${WORKLOAD_NAME}"
 
 
 # XLA Flags
